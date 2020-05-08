@@ -29,7 +29,6 @@ def conway(bd):
     mask = np.array([[1,1,1],[1,9,1],[1,1,1]])
     check_rules = np.vectorize(rules)
     rule = board.copy()
-    plt.show()
     while(True):
         sums = ndimage.convolve(rule, mask, mode='constant', cval=0.0)      # Computes the sum of every cell's neighbors
         rule = check_rules(sums-9)
@@ -39,8 +38,8 @@ def conway(bd):
         sum(sums.flatten())
 
 def add_cell(x, y):
-    global step_size 
-    
+    global step_size
+    img = board
     # Locks each cell to the grid
     x = (x//step_size)*step_size
     y = (y//step_size)*step_size
@@ -62,7 +61,8 @@ def add_cell(x, y):
         plt.imshow(img)
         plt.show()
     except Exception as ex:
-        print(ex)
+        # print(ex)
+        pass
 
 def rules(a):
     if a == -6:             # if a dead cell has exactly 3 neighbors
@@ -76,36 +76,67 @@ def rules(a):
 
 # Loads the board state from a file and returns the board object
 def load_board(filename):
-    with open(filename, 'rb') as f:
-        board = pickle.load(f)
-    return board
+    b = None
+    try:
+        with open(filename, 'rb') as f:
+            b = pickle.load(f)
+    except IOError:
+        print("ERROR: Could not open %s" % filename)
+    return b
 
 # Saves the board state to a file
-def save_board(filename, board):
-    with open(filename, 'wb') as f:
-        pickle.dump(board, f)
+def save_board(filename, brd):
+    try:
+        with open(filename, 'wb') as f:
+            pickle.dump(brd, f)
+    except IOError:
+        print("ERROR: Could not open %s" % filename)
+        return False
+    return True
 
 def onclick(event):
     try:
-        print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-          ('double' if event.dblclick else 'single', event.button,
-           event.x, event.y, event.xdata, event.ydata))
+        # print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+        #   ('double' if event.dblclick else 'single', event.button,
+        #    event.x, event.y, event.xdata, event.ydata))
         add_cell(int(event.xdata), int(event.ydata))
         
     except:
         pass
 
 try:
-    global img, step_size
+    global board, step_size
     step_size= 10
+
+    # sets up the plot
     fig, ax = plt.subplots()
-    # plt.savefig("output.png")
-    img = Image.new('L', (400,400), "black")
-    plt.imshow(img)
     cid = fig.canvas.mpl_connect('button_press_event', onclick)
-    plt.show()
-    conway(img)
+    
+    print("Welcome to Conway's Game of Life!")
+    print("1. New Game\n2. Load Game")
+    choice = int(input("What would you like to do? "))
+    while(choice < 1 or choice > 2):
+        print("Please enter a valid integer value.")
+        choice = int(input("What would you like to do? "))
+    
+    if choice == 1:
+        # creates a new black image to display for user input
+        board = Image.new('L', (400,400), "black")
+        plt.imshow(board)
+
+        # sets the onclick event for the plot
+        plt.show()
+    else:
+        filename = input("Enter the name of the file to load: ")
+        board = load_board(filename)
+    conway(board)
 except Exception as ex:
-    print(ex)
+    # print(ex)
+    save_choice = input("Would you like to save this board? (y/n): ")
+    while(save_choice.lower() == 'y'):
+        filename = input("Enter the name of the file to save to: ")
+        if(save_board(filename, board)):
+            break
+        save_choice = input("Would you like to save this board? (y/n): ")
     plt.close()
     exit()
